@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ringr Web Call Room</title>
+  <style>
+    body { font-family: sans-serif; background: #181c21; color: #fff; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; }
+    .container { margin-top: 40px; width: 100%; max-width: 460px; background: #23272f; border-radius: 16px; padding: 32px; box-shadow: 0 4px 24px #0006; }
+    h1 { margin-top: 0; }
+    #videos { display: flex; flex-direction: column; gap: 16px; margin-top: 24px; }
+    video { background: #111; border-radius: 8px; width: 100%; max-height: 320px; }
+    #localVideo { position: absolute; width: 120px; height: 160px; right: 40px; bottom: 40px; z-index: 2; border: 2px solid #fff; }
+    #remoteVideo { width: 100%; max-width: 420px; }
+    #status { margin-top: 16px; color: #f66; }
+    #room { color: #aaa; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Ringr Web Call Room</h1>
+    <div id="room"></div>
+    <div id="videos">
+      <video id="remoteVideo" autoplay playsinline></video>
+      <video id="localVideo" autoplay muted playsinline></video>
+    </div>
+    <div id="status"></div>
+  </div>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>
