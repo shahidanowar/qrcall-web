@@ -3,7 +3,14 @@
 const SERVER_URL = 'https://call-server-ueo9.onrender.com';
 const ICE_SERVERS = [{ urls: 'stun:stun.l.google.com:19302' }];
 
-const socket = io(SERVER_URL, { autoConnect: false });
+const socket = io(SERVER_URL, {
+  autoConnect: false,
+  transports: ['websocket', 'polling'],
+  timeout: 10000,
+});
+
+socket.io.on('error', (err) => console.warn('[Socket] connection error', err));
+
 let localStream = null;
 let remoteStream = null;
 let pc = null;
