@@ -17,17 +17,18 @@ let pc = null;
 let peerId = null;
 let isMuted = false;
 
+// Grab DOM elements first so logStatus can access them safely
+const statusDiv = document.getElementById('status');
+const roomDiv = document.getElementById('room');
+const btnHangup = document.getElementById('btnHangup');
+const btnMute = document.getElementById('btnMute');
+
 // Use window.location.hash for hash-based routing (e.g., /#/room/some-id)
 const roomId = window.location.hash.split('/').pop();
 
 if (!roomId) {
   logStatus('ERROR: No Room ID found in URL. Use format: /#/room/YOUR_ROOM_ID');
 }
-const statusDiv = document.getElementById('status');
-const roomDiv = document.getElementById('room');
-const btnHangup = document.getElementById('btnHangup');
-const btnMute = document.getElementById('btnMute');
-
 roomDiv.textContent = `Room: ${roomId}`;
 
 function logStatus(msg, color = '#f66') {
@@ -110,12 +111,13 @@ socket.on('peer-left', () => {
   if (pc) pc.close();
   pc = null;
   remoteStream = null;
+  window.location.href = '/call-ended.html';
 });
 
 btnHangup.onclick = () => {
   socket.emit('hangup-call', roomId);
   if (pc) pc.close();
-  window.location.href = '/';   // or any “home” screen you want
+  window.location.href = '/call-ended.html';
 };
 
 btnMute.onclick = () => {
