@@ -18,6 +18,7 @@ if (!roomId) {
 const statusDiv = document.getElementById('status');
 const roomDiv = document.getElementById('room');
 const localVideo = document.getElementById('localVideo');
+const btnHangup = document.getElementById('btnHangup');
 const remoteVideo = document.getElementById('remoteVideo');
 
 roomDiv.textContent = `Room: ${roomId}`;
