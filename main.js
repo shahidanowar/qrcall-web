@@ -5,7 +5,7 @@ const ICE_SERVERS = [{ urls: 'stun:stun.l.google.com:19302' }];
 
 const socket = io(SERVER_URL, {
   autoConnect: false,
-  transports: ['websocket', 'polling'],
+  transports: ['websocket'], // polling triggers CSP 'unsafe-eval' in some environments
   timeout: 10000,
 });
 
