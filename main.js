@@ -8,6 +8,7 @@ let localStream = null;
 let remoteStream = null;
 let pc = null;
 let peerId = null;
+let isMuted = false;
 
 // Use window.location.hash for hash-based routing (e.g., /#/room/some-id)
 const roomId = window.location.hash.split('/').pop();
@@ -18,6 +19,7 @@ if (!roomId) {
 const statusDiv = document.getElementById('status');
 const roomDiv = document.getElementById('room');
 const btnHangup = document.getElementById('btnHangup');
+const btnMute = document.getElementById('btnMute');
 
 roomDiv.textContent = `Room: ${roomId}`;
 
@@ -105,8 +107,16 @@ socket.on('peer-left', () => {
 
 btnHangup.onclick = () => {
   socket.emit('hangup-call', roomId);
-  pc.close();            // close our end
+  if (pc) pc.close();
   window.location.href = '/';   // or any “home” screen you want
+};
+
+btnMute.onclick = () => {
+  if (!localStream) return;
+  isMuted = !isMuted;
+  localStream.getAudioTracks().forEach(track => track.enabled = !isMuted);
+  btnMute.classList.toggle('muted', isMuted);
+  btnMute.textContent = isMuted ? 'Unmute' : 'Mute';
 };
 
 socket.on('signal', async ({ from, data }) => {
