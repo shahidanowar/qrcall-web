@@ -177,18 +177,19 @@
     <div class="timer" id="timer">00:00</div>
     
     <div class="controls">
-      <button class="control-btn mute-btn" id="btnMute" onclick="toggleMute()">
+      <button class="control-btn mute-btn" id="btnMute">
         <i class="fa-solid fa-microphone" aria-hidden="true"></i>
       </button>
-      <button class="control-btn hangup-btn" id="btnHangup" onclick="hangup()">
+      <button class="control-btn hangup-btn" id="btnHangup">
         <i class="fa-solid fa-phone rotate" aria-hidden="true"></i>
       </button>
     </div>
   </div>
-  <script src="main.js"></script>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script src="/main.js" type="module"></script>
   <script>
     let startTime = Date.now();
-    let isMuted = false;
+    let isMutedUI = false;
     
     function formatTime(seconds) {
       const mins = Math.floor(seconds / 60);
