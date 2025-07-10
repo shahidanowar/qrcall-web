@@ -1,6 +1,6 @@
 // Ringr Web Client: main.js
 // IMPORTANT: Replace this with the ngrok URL for your signaling server (port 3000)
-const SERVER_URL = 'https://YOUR_NGROK_SIGNALING_URL.ngrok.io';
+const SERVER_URL = 'https://call-server-ueo9.onrender.com';
 const ICE_SERVERS = [{ urls: 'stun:stun.l.google.com:19302' }];
 
 const socket = io(SERVER_URL, { autoConnect: false });
@@ -75,8 +75,19 @@ socket.on('joined-room', (id) => {
   // Only set up peer connection and wait for offer; do NOT create offer here.
 });
 
+socket.on('call-rejected', () => {
+  alert('Call was rejected');
+  pc.close();
+});
+
 socket.on('room-full', () => {
   logStatus('Room is full. Only two people can join.', '#f66');
+});
+
+
+socket.on('call-rejected', () => {
+  alert('Call was rejected');
+  pc.close();
 });
 
 socket.on('peer-joined', (pid) => {
@@ -94,6 +105,13 @@ socket.on('peer-left', () => {
   remoteStream = null;
   remoteVideo.srcObject = null;
 });
+
+btnHangup.onclick = () => {
+  socket.emit('hangup-call', roomId);
+  pc.close();            // close our end
+  window.location.href = '/';   // or any “home” screen you want
+};
+
 
 socket.on('signal', async ({ from, data }) => {
   peerId = from;
