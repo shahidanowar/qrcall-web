@@ -17,9 +17,7 @@ if (!roomId) {
 }
 const statusDiv = document.getElementById('status');
 const roomDiv = document.getElementById('room');
-const localVideo = document.getElementById('localVideo');
 const btnHangup = document.getElementById('btnHangup');
-const remoteVideo = document.getElementById('remoteVideo');
 
 roomDiv.textContent = `Room: ${roomId}`;
 
@@ -30,8 +28,7 @@ function logStatus(msg, color = '#f66') {
 
 async function getMedia() {
   try {
-    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-    localVideo.srcObject = localStream;
+    localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
     // Now that we have media, we can connect to the server and join the room.
     socket.connect();
   } catch (err) {
@@ -50,14 +47,15 @@ function createPeerConnection() {
     }
   };
   pc.ontrack = (event) => {
+    // No UI for remote stream; just ensure audio plays
     if (!remoteStream) {
       remoteStream = new MediaStream();
-      remoteVideo.srcObject = remoteStream;
+      const audioElem = new Audio();
+      audioElem.srcObject = remoteStream;
+      audioElem.play();
     }
-    event.streams[0].getTracks().forEach(track => {
-      remoteStream.addTrack(track);
-    });
-    console.log('[WebRTC] Received remote track');
+    event.streams[0].getTracks().forEach(track => remoteStream.addTrack(track));
+    console.log('[WebRTC] Received remote audio track');
   };
   pc.onconnectionstatechange = () => {
     console.log('[WebRTC] Connection state:', pc.connectionState);
@@ -85,7 +83,6 @@ socket.on('room-full', () => {
   logStatus('Room is full. Only two people can join.', '#f66');
 });
 
-
 socket.on('call-rejected', () => {
   alert('Call was rejected');
   pc.close();
@@ -104,7 +101,6 @@ socket.on('peer-left', () => {
   if (pc) pc.close();
   pc = null;
   remoteStream = null;
-  remoteVideo.srcObject = null;
 });
 
 btnHangup.onclick = () => {
@@ -112,7 +108,6 @@ btnHangup.onclick = () => {
   pc.close();            // close our end
   window.location.href = '/';   // or any “home” screen you want
 };
-
 
 socket.on('signal', async ({ from, data }) => {
   peerId = from;
