@@ -86,16 +86,11 @@ socket.on('joined-room', (id) => {
 
 socket.on('call-rejected', () => {
   alert('Call was rejected');
-  pc.close();
+  if (pc) pc.close();
 });
 
 socket.on('room-full', () => {
   logStatus('Room is full. Only two people can join.', '#f66');
-});
-
-socket.on('call-rejected', () => {
-  alert('Call was rejected');
-  pc.close();
 });
 
 socket.on('peer-joined', (pid) => {
@@ -117,7 +112,15 @@ socket.on('peer-left', () => {
 btnHangup.onclick = () => {
   socket.emit('hangup-call', roomId);
   if (pc) pc.close();
-  window.location.href = '/call-ended.html';
+  // Update the button to show the call has ended
+  btnHangup.innerHTML = '<i class="fa-solid fa-phone-slash"></i>';
+  btnHangup.classList.add('disabled');
+  btnHangup.onclick = null; // Disable further clicks
+
+  // Redirect after a short delay to show the change
+  setTimeout(() => {
+    window.location.href = '/call-ended.html';
+  }, 500);
 };
 
 btnMute.onclick = () => {
@@ -125,7 +128,15 @@ btnMute.onclick = () => {
   isMuted = !isMuted;
   localStream.getAudioTracks().forEach(track => track.enabled = !isMuted);
   btnMute.classList.toggle('muted', isMuted);
-  btnMute.textContent = isMuted ? 'Unmute' : 'Mute';
+  // Toggle the icon
+  const icon = btnMute.querySelector('i');
+  if (isMuted) {
+    icon.classList.remove('fa-microphone');
+    icon.classList.add('fa-microphone-slash');
+  } else {
+    icon.classList.remove('fa-microphone-slash');
+    icon.classList.add('fa-microphone');
+  }
 };
 
 socket.on('signal', async ({ from, data }) => {
