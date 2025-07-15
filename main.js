@@ -153,7 +153,7 @@ socket.on('room-full', () => {
 socket.on('peer-joined', (pid) => {
   peerId = pid;
   console.log('[Socket] peer-joined', pid);
-  // Ringing has already started, now we create the connection
+  // Ringing has already started, now we create the connection.
   createPeerConnection();
   makeOffer(); // The initiator makes the offer
 });
@@ -237,10 +237,14 @@ async function makeOffer() {
 
 // Event Listeners for confirmation
 btnConfirmYes.onclick = () => {
+  // Step 1: Update UI and start ringing immediately for instant feedback.
   confirmationContainer.style.display = 'none';
   callContainer.style.display = 'flex';
   playRinging();
   callStatusDiv.textContent = 'Ringing...';
+
+  // Step 2: Request media permissions. This is now decoupled from the ringing.
+  // The call logic will proceed in the background once permission is granted.
   getMedia();
 };
 
