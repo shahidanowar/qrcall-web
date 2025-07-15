@@ -76,6 +76,19 @@ function stopRinging() {
 async function getMedia() {
   try {
     localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+
+    // Unlock audio context by playing and pausing the sound after user interaction.
+    // This is necessary for autoplay to work in most browsers.
+    ringingAudio.muted = true;
+    try {
+      await ringingAudio.play();
+      ringingAudio.pause();
+      ringingAudio.currentTime = 0;
+      ringingAudio.muted = false;
+    } catch (e) {
+      console.warn('Could not unlock audio playback', e);
+    }
+
     // Now that we have media, we can connect to the server and join the room.
     socket.connect();
   } catch (err) {
