@@ -145,7 +145,9 @@ socket.on('call-rejected', () => {
 });
 
 socket.on('room-full', () => {
-  logStatus('Room is full. Only two people can join.', '#f66');
+  stopRinging();
+  alert('The other person is busy.');
+  window.location.href = '/call-ended.html';
 });
 
 socket.on('peer-joined', (pid) => {
