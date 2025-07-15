@@ -16,12 +16,17 @@ let remoteStream = null;
 let pc = null;
 let peerId = null;
 let isMuted = false;
+let timerInterval = null;
+let startTime = null;
 
 // Grab DOM elements first so logStatus can access them safely
 const statusDiv = document.getElementById('status');
 const roomDiv = document.getElementById('room');
 const btnHangup = document.getElementById('btnHangup');
 const btnMute = document.getElementById('btnMute');
+const callStatusDiv = document.getElementById('call-status');
+const timerDiv = document.getElementById('timer');
+const ringingAudio = document.getElementById('ringing-audio');
 
 // Use window.location.hash for hash-based routing (e.g., /#/room/some-id)
 const roomId = window.location.hash.split('/').pop();
@@ -34,6 +39,38 @@ roomDiv.textContent = `Room: ${roomId}`;
 function logStatus(msg, color = '#f66') {
   statusDiv.textContent = msg;
   statusDiv.style.color = color;
+}
+
+function formatTime(seconds) {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+}
+
+function startTimer() {
+  stopTimer(); // Ensure no multiple intervals
+  startTime = Date.now();
+  timerDiv.textContent = '00:00';
+  timerInterval = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+    timerDiv.textContent = formatTime(elapsed);
+  }, 1000);
+}
+
+function stopTimer() {
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+}
+
+function playRinging() {
+  ringingAudio.play().catch(e => console.warn("Ringing play failed", e));
+}
+
+function stopRinging() {
+  ringingAudio.pause();
+  ringingAudio.currentTime = 0;
 }
 
 async function getMedia() {
@@ -57,12 +94,16 @@ function createPeerConnection() {
     }
   };
   pc.ontrack = (event) => {
+    stopRinging();
+    startTimer();
+    callStatusDiv.textContent = 'Ongoing Call...';
+
     // No UI for remote stream; just ensure audio plays
     if (!remoteStream) {
       remoteStream = new MediaStream();
       const audioElem = new Audio();
       audioElem.srcObject = remoteStream;
-      audioElem.play();
+      audioElem.play().catch(e => console.error('Audio play failed', e));
     }
     event.streams[0].getTracks().forEach(track => remoteStream.addTrack(track));
     console.log('[WebRTC] Received remote audio track');
@@ -96,6 +137,8 @@ socket.on('room-full', () => {
 socket.on('peer-joined', (pid) => {
   peerId = pid;
   console.log('[Socket] peer-joined', pid);
+  playRinging();
+  callStatusDiv.textContent = 'Ringing...';
   createPeerConnection();
   makeOffer(); // The initiator makes the offer
 });
@@ -103,6 +146,8 @@ socket.on('peer-joined', (pid) => {
 socket.on('peer-left', () => {
   logStatus('Peer left the room.', '#ff6');
   console.log('[Socket] peer-left');
+  stopRinging();
+  stopTimer();
   if (pc) pc.close();
   pc = null;
   remoteStream = null;
@@ -112,6 +157,8 @@ socket.on('peer-left', () => {
 btnHangup.onclick = () => {
   socket.emit('hangup-call', roomId);
   if (pc) pc.close();
+  stopRinging();
+  stopTimer();
   // Update the button to show the call has ended
   btnHangup.innerHTML = '<i class="fa-solid fa-phone-slash"></i>';
   btnHangup.classList.add('disabled');
@@ -146,6 +193,8 @@ socket.on('signal', async ({ from, data }) => {
   if (data.sdp) {
     console.log('[WebRTC] Received SDP', data.sdp.type);
     if (data.sdp.type === 'offer') {
+      playRinging();
+      callStatusDiv.textContent = 'Ringing...';
       await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);

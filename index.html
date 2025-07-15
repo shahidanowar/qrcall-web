@@ -184,7 +184,7 @@
     </div>
     
     <div class="caller-name">Caller</div>
-    <div class="call-status">Ongoing Call...</div>
+    <div class="call-status" id="call-status">Connecting...</div>
     
     <div class="timer" id="timer">00:00</div>
     <div id="status" class="status"></div>
@@ -199,66 +199,8 @@
       </button>
     </div>
   </div>
+  <audio id="ringing-audio" src="/ringback.mp3" loop></audio>
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <script src="/main.js" type="module"></script>
-  <script>
-    let startTime = Date.now();
-    let isMutedUI = false;
-    
-    function formatTime(seconds) {
-      const mins = Math.floor(seconds / 60);
-      const secs = seconds % 60;
-      return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }
-    
-    function updateTimer() {
-      const elapsed = Math.floor((Date.now() - startTime) / 1000);
-      document.getElementById('timer').textContent = formatTime(elapsed);
-    }
-    
-    function toggleMute() {
-      const muteBtn = document.getElementById('btnMute');
-      const icon = muteBtn.querySelector('i');
-      isMuted = !isMuted;
-      if (isMuted) {
-        muteBtn.classList.add('muted');
-        icon.classList.remove('fa-microphone');
-        icon.classList.add('fa-microphone-slash');
-      } else {
-        muteBtn.classList.remove('muted');
-        icon.classList.remove('fa-microphone-slash');
-        icon.classList.add('fa-microphone');
-      }
-    }
-    
-    function hangup() {
-      const hangupBtn = document.getElementById('btnHangup');
-      hangupBtn.style.background = '#d32f2f';
-      
-      // Simulate call ending
-      setTimeout(() => {
-        document.querySelector('.call-status').textContent = 'Call Ended';
-        document.querySelector('.caller-name').textContent = 'Call Ended';
-        hangupBtn.textContent = '📱';
-        hangupBtn.style.background = '#666';
-        hangupBtn.onclick = null;
-      }, 200);
-    }
-    
-    // Start the timer immediately
-    updateTimer();
-    setInterval(updateTimer, 1000);
-    
-    // Add some visual feedback for button presses
-    document.querySelectorAll('.control-btn').forEach(btn => {
-      btn.addEventListener('touchstart', function() {
-        this.style.transform = 'scale(0.95)';
-      });
-      
-      btn.addEventListener('touchend', function() {
-        this.style.transform = 'scale(1)';
-      });
-    });
-  </script>
 </body>
 </html>
