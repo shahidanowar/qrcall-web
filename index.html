@@ -178,7 +178,19 @@
   </style>
 </head>
 <body>
-  <div class="call-container">
+  <div id="confirmation-container" class="call-container">
+    <div class="caller-name" id="confirmation-message"></div>
+    <div class="controls">
+      <button id="btn-confirm-yes" class="control-btn" style="background: #4CAF50;">
+        <i class="fa-solid fa-phone"></i>
+      </button>
+      <button id="btn-confirm-no" class="control-btn hangup-btn">
+        <i class="fa-solid fa-times"></i>
+      </button>
+    </div>
+  </div>
+
+  <div class="call-container" id="call-container" style="display: none;">
     <div class="avatar-wrapper">
       <div class="avatar" id="avatar"></div>
     </div>

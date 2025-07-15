@@ -27,14 +27,23 @@ const btnMute = document.getElementById('btnMute');
 const callStatusDiv = document.getElementById('call-status');
 const timerDiv = document.getElementById('timer');
 const ringingAudio = document.getElementById('ringing-audio');
+const confirmationContainer = document.getElementById('confirmation-container');
+const callContainer = document.getElementById('call-container');
+const confirmationMessage = document.getElementById('confirmation-message');
+const btnConfirmYes = document.getElementById('btn-confirm-yes');
+const btnConfirmNo = document.getElementById('btn-confirm-no');
 
 // Use window.location.hash for hash-based routing (e.g., /#/room/some-id)
 const roomId = window.location.hash.split('/').pop();
 
 if (!roomId) {
-  logStatus('ERROR: No Room ID found in URL. Use format: /#/room/YOUR_ROOM_ID');
+  confirmationMessage.textContent = 'No Room ID Found!';
+  btnConfirmYes.style.display = 'none';
+  btnConfirmNo.style.display = 'none';
+} else {
+  confirmationMessage.textContent = `Call ${roomId}?`;
+  roomDiv.textContent = `Room: ${roomId}`;
 }
-roomDiv.textContent = `Room: ${roomId}`;
 
 function logStatus(msg, color = '#f66') {
   statusDiv.textContent = msg;
@@ -76,19 +85,6 @@ function stopRinging() {
 async function getMedia() {
   try {
     localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-
-    // Unlock audio context by playing and pausing the sound after user interaction.
-    // This is necessary for autoplay to work in most browsers.
-    ringingAudio.muted = true;
-    try {
-      await ringingAudio.play();
-      ringingAudio.pause();
-      ringingAudio.currentTime = 0;
-      ringingAudio.muted = false;
-    } catch (e) {
-      console.warn('Could not unlock audio playback', e);
-    }
-
     // Now that we have media, we can connect to the server and join the room.
     socket.connect();
   } catch (err) {
@@ -139,8 +135,13 @@ socket.on('joined-room', (id) => {
 });
 
 socket.on('call-rejected', () => {
-  alert('Call was rejected');
+  logStatus('Call was rejected.', '#ff6');
+  stopRinging();
+  stopTimer();
   if (pc) pc.close();
+  pc = null;
+  remoteStream = null;
+  window.location.href = '/call-ended.html';
 });
 
 socket.on('room-full', () => {
@@ -233,4 +234,13 @@ async function makeOffer() {
   socket.emit('signal', { to: peerId, data: { sdp: offer } });
 }
 
-getMedia();
+// Event Listeners for confirmation
+btnConfirmYes.onclick = () => {
+  confirmationContainer.style.display = 'none';
+  callContainer.style.display = 'flex';
+  getMedia();
+};
+
+btnConfirmNo.onclick = () => {
+  window.location.href = '/call-ended.html';
+};
