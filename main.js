@@ -153,8 +153,7 @@ socket.on('room-full', () => {
 socket.on('peer-joined', (pid) => {
   peerId = pid;
   console.log('[Socket] peer-joined', pid);
-  playRinging();
-  callStatusDiv.textContent = 'Ringing...';
+  // Ringing has already started, now we create the connection
   createPeerConnection();
   makeOffer(); // The initiator makes the offer
 });
@@ -240,6 +239,8 @@ async function makeOffer() {
 btnConfirmYes.onclick = () => {
   confirmationContainer.style.display = 'none';
   callContainer.style.display = 'flex';
+  playRinging();
+  callStatusDiv.textContent = 'Ringing...';
   getMedia();
 };
 
