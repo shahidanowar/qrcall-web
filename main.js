@@ -266,18 +266,22 @@ async function makeOffer() {
 }
 
 // Event Listeners for confirmation
-btnConfirmYes.onclick = () => {
-  // Step 1: Update UI and start ringing immediately for instant feedback.
-  confirmationContainer.style.display = 'none';
-  callContainer.style.display = 'flex';
-  playRinging();
-  callStatusDiv.textContent = 'Ringing...';
+if (btnConfirmYes) {
+  btnConfirmYes.addEventListener('click', () => {
+    // Step 1: Update UI and start ringing immediately for instant feedback.
+    confirmationContainer.style.display = 'none';
+    callContainer.style.display = 'flex';
+    playRinging();
+    callStatusDiv.textContent = 'Ringing...';
 
-  // Step 2: Request media permissions. This is now decoupled from the ringing.
-  // The call logic will proceed in the background once permission is granted.
-  getMedia();
-};
+    // Step 2: Request media permissions. This is now decoupled from the ringing.
+    // The call logic will proceed in the background once permission is granted.
+    getMedia();
+  });
+}
 
-btnConfirmNo.onclick = () => {
-  window.location.href = '/call-ended.html';
-};
+if (btnConfirmNo) {
+  btnConfirmNo.addEventListener('click', () => {
+    window.location.href = '/call-ended.html';
+  });
+}
