@@ -9,6 +9,7 @@ const socket = io(SERVER_URL, {
   timeout: 10000,
 });
 
+
 socket.io.on('error', (err) => console.warn('[Socket] connection error', err));
 
 let localStream = null;
@@ -71,6 +72,16 @@ function stopTimer() {
     clearInterval(timerInterval);
     timerInterval = null;
   }
+}
+
+function showToast(message, duration = 2500) {
+  const toast = document.getElementById('toast');
+  toast.textContent = message;
+  toast.classList.add('show');
+  
+  setTimeout(() => {
+    toast.classList.remove('show');
+  }, duration);
 }
 
 function playRinging() {
@@ -146,7 +157,7 @@ socket.on('call-rejected', () => {
 
 socket.on('room-full', () => {
   stopRinging();
-  alert('The other person is busy.');
+  showToast('The other person is busy.');
   window.location.href = '/call-ended.html';
 });
 
