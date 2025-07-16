@@ -109,7 +109,12 @@ async function getMedia() {
     // Now that we have media, we can connect to the server and join the room.
     socket.connect();
   } catch (err) {
-    logStatus('Could not access camera/mic: ' + err.message);
+    console.error('getUserMedia error:', err);
+    stopRinging();
+    showModal(
+      `Failed to access microphone. <br><br> Please grant permission and try again.`,
+      () => { window.location.href = '/call-ended.html'; }
+    );
   }
 }
 
