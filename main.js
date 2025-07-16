@@ -293,7 +293,8 @@ if (btnConfirmYes) {
       if (!callHasTimedOut) {
         callHasTimedOut = true;
         socket.emit('hangup-call', roomId);
-        showModal('Call not answered.', () => {
+        stopRinging();
+        showModal('The call was not answered.', () => {
           window.location.href = '/call-ended.html';
         });
       }
