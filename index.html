@@ -83,6 +83,61 @@
       margin-bottom: 50px;
       font-family: 'Courier New', monospace;
     }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-box {
+      background: #222;
+      padding: 24px 32px;
+      border-radius: 16px;
+      text-align: center;
+      max-width: 300px;
+      color: #fff;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+      animation: popIn 0.3s ease;
+    }
+
+    .modal-message {
+      font-size: 1rem;
+      margin-bottom: 20px;
+    }
+
+    .modal-ok-btn {
+      padding: 10px 20px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: background 0.2s ease;
+    }
+
+    .modal-ok-btn:hover {
+      background: #43a047;
+    }
+
+    @keyframes popIn {
+      from {
+        transform: scale(0.85);
+        opacity: 0;
+      }
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
     
     .room-id {
       font-size: 0.9rem;
@@ -211,9 +266,17 @@
       </button>
     </div>
   </div>
-  <div id="toast" style="display:none;" class="toast"></div>
+  
   <audio id="ringing-audio" src="https://cdn.freesound.org/previews/32/32155_44431-lq.mp3" loop></audio>
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <script src="/main.js" type="module"></script>
+
+  <div id="modal-overlay" class="modal-overlay" style="display: none;">
+    <div class="modal-box">
+      <div id="modal-message" class="modal-message">Message</div>
+      <button id="modal-ok" class="modal-ok-btn">OK</button>
+    </div>
+  </div>
+  
 </body>
 </html>

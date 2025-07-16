@@ -74,15 +74,23 @@ function stopTimer() {
   }
 }
 
-function showToast(message, duration = 2500) {
-  const toast = document.getElementById('toast');
-  toast.textContent = message;
-  toast.classList.add('show');
-  
-  setTimeout(() => {
-    toast.classList.remove('show');
-  }, duration);
+//---------------modal----      
+function showModal(message, onClose = () => {}) {
+  const overlay = document.getElementById('modal-overlay');
+  const msgBox = document.getElementById('modal-message');
+  const okBtn = document.getElementById('modal-ok');
+
+  msgBox.textContent = message;
+  overlay.style.display = 'flex';
+
+  okBtn.onclick = () => {
+    overlay.style.display = 'none';
+    onClose();
+  };
 }
+
+
+//---------------modal----
 
 function playRinging() {
   ringingAudio.play().catch(e => console.warn("Ringing play failed", e));
@@ -157,8 +165,9 @@ socket.on('call-rejected', () => {
 
 socket.on('room-full', () => {
   stopRinging();
-  showToast('The other person is busy.');
-  window.location.href = '/call-ended.html';
+  showModal('The other person is busy.', () => {
+    window.location.href = '/call-ended.html';
+  });
 });
 
 socket.on('peer-joined', (pid) => {
