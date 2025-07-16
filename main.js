@@ -80,7 +80,7 @@ function showModal(message, onClose = () => {}) {
   const msgBox = document.getElementById('modal-message');
   const okBtn = document.getElementById('modal-ok');
 
-  msgBox.textContent = message;
+  msgBox.innerHTML = message;
   overlay.style.display = 'flex';
 
   okBtn.onclick = () => {
@@ -160,8 +160,11 @@ socket.on('call-rejected', () => {
   if (pc) pc.close();
   pc = null;
   remoteStream = null;
-  window.location.href = '/call-ended.html';
+  showModal('The call was rejected <br> or <br> "not answered in 30 seconds".', () => {
+    window.location.href = '/call-ended.html';
+  });
 });
+
 
 socket.on('room-full', () => {
   stopRinging();
