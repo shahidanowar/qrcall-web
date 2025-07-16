@@ -27,7 +27,7 @@
     
     .call-container { 
       width: 100%;
-      max-width: 320px;
+      max-width: 260px;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -153,11 +153,14 @@
     
     .controls {
       display: flex;
-      gap: 40px;
+      flex-direction: column;   /* Stack vertically */
       align-items: center;
       justify-content: center;
+      gap: 40px;                /* Space between buttons */
       margin-bottom: 30px;
     }
+
+
     
     .control-btn {
       width: 64px;
@@ -201,11 +204,6 @@
       background: #ff9800;
     }
     
-    /* Mobile responsiveness */
-    @media (max-width: 480px) {
-      .call-container {
-        max-width: 280px;
-      }
       
       .avatar {
         width: 120px;
@@ -226,9 +224,6 @@
         font-size: 1.3rem;
       }
       
-      .controls {
-        gap: 30px;
-      }
     }
   </style>
 </head>
@@ -253,7 +248,6 @@
     <div class="caller-name">Caller</div>
     <div class="call-status" id="call-status">Connecting...</div>
     
-    <div class="timer" id="timer">00:00</div>
     <div class="timer" id="timer" style="display: none;">00:00</div>
 
     
