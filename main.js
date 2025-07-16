@@ -175,7 +175,7 @@ socket.on('call-rejected', () => {
   if (pc) pc.close();
   pc = null;
   remoteStream = null;
-  showModal('The call was rejected <br> or <br> "not answered in 30 seconds".', () => {
+  showModal('The call was rejected', () => {
     window.location.href = '/call-ended.html';
   });
 });
