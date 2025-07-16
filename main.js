@@ -19,6 +19,7 @@ let peerId = null;
 let isMuted = false;
 let timerInterval = null;
 let startTime = null;
+let callRejectTimeout = null; // Timer to reject call if not answered
 
 // Grab DOM elements first so logStatus can access them safely
 const statusDiv = document.getElementById('status');
@@ -145,6 +146,12 @@ function createPeerConnection() {
   };
   pc.onconnectionstatechange = () => {
     console.log('[WebRTC] Connection state:', pc.connectionState);
+    if (pc.connectionState === 'connected') {
+      if (callRejectTimeout) clearTimeout(callRejectTimeout);
+      stopRinging();
+      startTimer();
+      callStatusDiv.textContent = 'Connected';
+    }
   };
   return pc;
 }
@@ -161,6 +168,7 @@ socket.on('joined-room', (id) => {
 });
 
 socket.on('call-rejected', () => {
+  if (callRejectTimeout) clearTimeout(callRejectTimeout);
   logStatus('Call was rejected.', '#ff6');
   stopRinging();
   stopTimer();
@@ -189,6 +197,7 @@ socket.on('peer-joined', (pid) => {
 });
 
 socket.on('peer-left', () => {
+  if (callRejectTimeout) clearTimeout(callRejectTimeout);
   logStatus('Peer left the room.', '#ff6');
   console.log('[Socket] peer-left');
   stopRinging();
@@ -246,6 +255,7 @@ socket.on('signal', async ({ from, data }) => {
       socket.emit('signal', { to: from, data: { sdp: answer } });
       console.log('[WebRTC] Sent answer');
     } else if (data.sdp.type === 'answer') {
+      if (callRejectTimeout) clearTimeout(callRejectTimeout); // Clear the timeout on answer
       await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
       console.log('[WebRTC] Set remote answer');
     }
@@ -276,6 +286,14 @@ if (btnConfirmYes) {
 
     // Step 2: Request media permissions. This is now decoupled from the ringing.
     // The call logic will proceed in the background once permission is granted.
+    // Set a timeout to reject the call if not answered in 30 seconds
+    callRejectTimeout = setTimeout(() => {
+      socket.emit('hangup-call', roomId);
+      showModal('Call not answered.', () => {
+        window.location.href = '/call-ended.html';
+      });
+    }, 30000);
+
     getMedia();
   });
 }
