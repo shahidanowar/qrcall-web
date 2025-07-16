@@ -61,6 +61,7 @@ function startTimer() {
   stopTimer(); // Ensure no multiple intervals
   startTime = Date.now();
   timerDiv.textContent = '00:00';
+  timerDiv.style.display = 'block';
   timerInterval = setInterval(() => {
     const elapsed = Math.floor((Date.now() - startTime) / 1000);
     timerDiv.textContent = formatTime(elapsed);
@@ -72,6 +73,7 @@ function stopTimer() {
     clearInterval(timerInterval);
     timerInterval = null;
   }
+  timerDiv.style.display = 'none';
 }
 
 //---------------modal----      
