@@ -1,6 +1,6 @@
 // Ringr Web Client: main.js
-// IMPORTANT: Replace this with the ngrok URL for your signaling server (port 3000)
-const SERVER_URL = 'https://call-server-ueo9.onrender.com';
+// Production server configuration
+const SERVER_URL = 'https://visionai.site';
 const ICE_SERVERS = [{ urls: 'stun:stun.l.google.com:19302' }];
 
 const socket = io(SERVER_URL, {
@@ -40,11 +40,11 @@ const btnConfirmNo = document.getElementById('btn-confirm-no');
 const roomId = window.location.hash.split('/').pop();
 
 if (!roomId) {
-  confirmationMessage.textContent = 'No Room ID Found!';
+  confirmationMessage.textContent = 'No User Found!';
   btnConfirmYes.style.display = 'none';
   btnConfirmNo.style.display = 'none';
 } else {
-  confirmationMessage.textContent = `Call ${roomId}?`;
+  confirmationMessage.textContent = `Call?`;
   roomDiv.textContent = `Room: ${roomId}`;
 }
 
@@ -108,7 +108,9 @@ function stopRinging() {
 async function getMedia() {
   try {
     localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-    // Now that we have media, we can connect to the server and join the room.
+    // Now that we have media access, start the ringback and connect to server
+    playRinging();
+    callStatusDiv.textContent = 'Ringing...';
     socket.connect();
   } catch (err) {
     console.error('getUserMedia error:', err);
@@ -275,19 +277,35 @@ async function makeOffer() {
   const offer = await pc.createOffer();
   await pc.setLocalDescription(offer);
   socket.emit('signal', { to: peerId, data: { sdp: offer } });
+  
+  // Send push notification to the callee
+  try {
+    const calleeId = roomId.replace('4323', ''); // Extract user ID from custom room ID
+    const response = await fetch(`${SERVER_URL}/send-call-push`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        toUserId: calleeId,
+        roomId: roomId,
+        callerName: 'Web Caller' // You can customize this
+      })
+    });
+    const result = await response.json();
+    console.log('Push notification result:', result);
+  } catch (error) {
+    console.warn('Failed to send push notification:', error);
+  }
 }
 
 // Event Listeners for confirmation
 if (btnConfirmYes) {
   btnConfirmYes.addEventListener('click', () => {
-    // Step 1: Update UI and start ringing immediately for instant feedback.
+    // Step 1: Update UI immediately for user feedback
     confirmationContainer.style.display = 'none';
     callContainer.style.display = 'flex';
-    playRinging();
-    callStatusDiv.textContent = 'Ringing...';
+    callStatusDiv.textContent = 'Requesting microphone access...';
 
-    // Step 2: Request media permissions. This is now decoupled from the ringing.
-    // The call logic will proceed in the background once permission is granted.
+    // Step 2: Request media permissions first, then start ringing
     // Set a timeout to reject the call if not answered in 30 seconds
     callRejectTimeout = setTimeout(() => {
       if (!callHasTimedOut) {
