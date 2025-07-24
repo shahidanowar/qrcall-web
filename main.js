@@ -274,38 +274,84 @@ socket.on('signal', async ({ from, data }) => {
 });
 
 async function makeOffer() {
+  if (!pc) createPeerConnection();
   const offer = await pc.createOffer();
   await pc.setLocalDescription(offer);
   socket.emit('signal', { to: peerId, data: { sdp: offer } });
-  
+  console.log('[WebRTC] Sent offer');
+
   // Send push notification to the callee
   try {
-    const calleeId = roomId.replace('4323', ''); // Extract user ID from custom room ID
+    // The peerId is the actual ID of the user who joined the room.
+    const calleeId = peerId;
+    const callerName = 'Web Caller'; // You can customize this
+
+    console.log(`[Push] Attempting to send push to user ${calleeId} for room ${roomId}`);
+
     const response = await fetch(`${SERVER_URL}/send-call-push`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         toUserId: calleeId,
         roomId: roomId,
-        callerName: 'Web Caller' // You can customize this
+        callerName: callerName // You can customize this
       })
     });
     const result = await response.json();
-    console.log('Push notification result:', result);
+    if (result.success) {
+      console.log('[Push] Push notification sent successfully.');
+    } else {
+      console.warn('[Push] Server failed to send push notification:', result.message);
+    }
   } catch (error) {
-    console.warn('Failed to send push notification:', error);
+    console.error('[Push] Error sending push notification request:', error);
   }
 }
 
 // Event Listeners for confirmation
 if (btnConfirmYes) {
   btnConfirmYes.addEventListener('click', () => {
+    const callerEmail = document.getElementById('caller-email').value.trim();
+    if (!callerEmail || !/^\S+@\S+\.\S+$/.test(callerEmail)) {
+      showModal('Please enter a valid email address to continue.');
+      return;
+    }
+
     // Step 1: Update UI immediately for user feedback
     confirmationContainer.style.display = 'none';
     callContainer.style.display = 'flex';
-    callStatusDiv.textContent = 'Requesting microphone access...';
+    callStatusDiv.textContent = 'Sending notification...';
 
-    // Step 2: Request media permissions first, then start ringing
+    // Step 2: Send the push notification immediately since the web client is the initiator.
+    try {
+      const calleeId = roomId.replace('4323', ''); // Correctly extract user ID from custom room ID
+      const callerName = 'Web Caller';
+      console.log(`[Push] Initiating call. Sending push to user ${calleeId} for room ${roomId}`);
+      
+      fetch(`${SERVER_URL}/send-call-push`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ toUserId: calleeId, roomId: roomId, callerName: callerName })
+      })
+      .then(res => res.json())
+      .then(result => {
+        if (result.success) {
+          console.log('[Push] Push notification sent successfully.');
+        } else {
+          console.warn('[Push] Server failed to send push notification:', result.message);
+        }
+      })
+      .catch(error => console.error('[Push] Error sending push notification request:', error));
+
+    } catch (error) {
+      console.error('[Push] Failed to construct push notification request:', error);
+    }
+
+    // Step 3: Now, request media and connect to the signaling server.
+ 
+    callStatusDiv.textContent = 'Requesting microphone access...';
+    getMedia();
+    
     // Set a timeout to reject the call if not answered in 30 seconds
     callRejectTimeout = setTimeout(() => {
       if (!callHasTimedOut) {
@@ -317,8 +363,6 @@ if (btnConfirmYes) {
         });
       }
     }, 30000);
-
-    getMedia();
   });
 }
 

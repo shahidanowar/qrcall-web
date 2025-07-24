@@ -83,6 +83,27 @@
       font-family: 'Courier New', monospace;
     }
 
+    
+    .email-input-container {
+      margin: 20px 0;
+      width: 100%;
+    }
+
+    .email-input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 25px;
+      border: 1px solid #444;
+      background: #111;
+      color: #fff;
+      font-size: 1rem;
+      text-align: center;
+    }
+
+    .email-input::placeholder {
+      color: #888;
+    }
+
     .modal-overlay {
       position: fixed;
       top: 0; left: 0;
@@ -234,6 +255,9 @@
 <body>
   <div id="confirmation-container" class="call-container">
     <div class="caller-name" id="confirmation-message"></div>
+    <div class="email-input-container">
+      <input type="email" id="caller-email" class="email-input" placeholder="Enter your email to call" />
+    </div>
     <div class="controls">
       <button id="btn-confirm-yes" class="control-btn" style="background: #4CAF50;">
         <i class="fa-solid fa-phone"></i>
