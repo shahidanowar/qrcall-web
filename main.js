@@ -1,14 +1,12 @@
 // Ringr Web Client: main.js
 // Production server configuration
-const SERVER_URL = 'https://visionai.site';
-const ICE_SERVERS = [
-  { urls: 'stun:stun.l.google.com:19302' },
+const SERVER_URL = 'https://qrcall-server.onrender.com';
+const ICE_SERVERS = [{ urls: 'stun:stun.l.google.com:19302' },
   {
     urls: 'turn:openrelay.metered.ca:80',
     username: 'openrelayproject',
-    credential: 'openrelayproject',
-  },
-];
+    credential: 'openrelayproject'
+  }];
 
 const socket = io(SERVER_URL, {
   autoConnect: false,
@@ -151,16 +149,16 @@ function createPeerConnection() {
       audioElem.srcObject = remoteStream;
       audioElem.play().catch(e => console.error('Audio play failed', e));
     }
+    event.streams[0].getTracks().forEach(track => remoteStream.addTrack(track));
     console.log('[WebRTC] Received remote audio track');
   };
   pc.onconnectionstatechange = () => {
     console.log('[WebRTC] Connection state:', pc.connectionState);
     if (pc.connectionState === 'connected') {
-      // This is the definitive point where the call is active.
+      if (callRejectTimeout) clearTimeout(callRejectTimeout);
       stopRinging();
-      logStatus('Call connected!', '#6f6');
-      callStatusDiv.textContent = 'Call Connected';
       startTimer();
+      callStatusDiv.textContent = 'Connected';
     }
   };
   return pc;
@@ -168,68 +166,43 @@ function createPeerConnection() {
 
 socket.on('connect', () => {
   logStatus('Connected to signaling server', '#6f6');
-  // Register as web client
-  socket.emit('register-client', { userId: 'web-caller', clientType: 'web' });
+  socket.emit('join-room', roomId);
 });
 
-socket.on('client-registered', ({ socketId }) => {
-  logStatus('Registered with server', '#6f6');
-  console.log('[Socket] Registered as web client:', socketId);
+socket.on('joined-room', (id) => {
+  logStatus('Joined room. Waiting for peer...', '#6f6');
+  console.log('[Socket] joined-room', id);
+  // Only set up peer connection and wait for offer; do NOT create offer here.
 });
 
-socket.on('call-initiated', async ({ callId }) => {
-  console.log('[Socket] Call initiated:', callId);
-  
-  // 3. Now that the server has confirmed the call, send the push notification
-  try {
-    console.log('[Push] Sending notification for callId:', callId);
-    const response = await fetch(`${SERVER_URL}/send-call-push`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        toUserId: roomId, // The user ID from the URL hash
-        roomId: callId,   // Use callId as roomId in notification
-        callerName: 'Web Caller',
-      }),
-    });
-
-    const result = await response.json();
-    if (!result.success) {
-      throw new Error(result.message || 'Failed to send notification.');
-    }
-
-    console.log('[Push] Notification sent successfully.');
-  } catch (err) {
-    console.error('Failed to send push notification:', err);
-    showModal(`Error: ${err.message}`, () => {
-      window.location.href = '/call-ended.html';
-    });
-  }
-});
-
-socket.on('callee-joined', ({ callId, peerSocketId }) => {
-  console.log('[Socket] Callee joined call:', callId, 'peer:', peerSocketId);
-  peerId = peerSocketId;
-
-  // Stop the ringing and update status now that the callee has joined
-  stopRinging();
-  callStatusDiv.textContent = 'Connecting...';
-
-  // The web client (initiator) sends the offer to establish the connection.
-  makeOffer();
-});
-
-socket.on('call-rejected', ({ callId }) => {
-  logStatus('Call was rejected.', '#f66');
-  console.log('[Socket] Call rejected:', callId);
+socket.on('call-rejected', () => {
+  if (callHasTimedOut) return;
+  if (callRejectTimeout) clearTimeout(callRejectTimeout);
+  logStatus('Call was rejected.', '#ff6');
   stopRinging();
   stopTimer();
   if (pc) pc.close();
   pc = null;
   remoteStream = null;
-  showModal('Call was rejected.', () => {
+  showModal('The call was rejected', () => {
     window.location.href = '/call-ended.html';
   });
+});
+
+
+socket.on('room-full', () => {
+  stopRinging();
+  showModal('The other person is busy.', () => {
+    window.location.href = '/call-ended.html';
+  });
+});
+
+socket.on('peer-joined', (pid) => {
+  peerId = pid;
+  console.log('[Socket] peer-joined', pid);
+  // Ringing has already started, now we create the connection.
+  createPeerConnection();
+  makeOffer(); // The initiator makes the offer
 });
 
 socket.on('peer-left', () => {
@@ -311,45 +284,91 @@ async function makeOffer() {
   await pc.setLocalDescription(offer);
   socket.emit('signal', { to: peerId, data: { sdp: offer } });
   console.log('[WebRTC] Sent offer');
-}
 
-// New function to handle the entire call initiation flow
-async function initiateCall() {
-    if (!roomId) {
-        logStatus('Cannot call: No user ID found.');
-        return;
+  // Send push notification to the callee
+  try {
+    // The peerId is the actual ID of the user who joined the room.
+    const calleeId = peerId;
+    const callerName = 'Web Caller'; // You can customize this
+
+    console.log(`[Push] Attempting to send push to user ${calleeId} for room ${roomId}`);
+
+    const response = await fetch(`${SERVER_URL}/send-call-push`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        toUserId: calleeId,
+        roomId: roomId,
+        callerName: callerName // You can customize this
+      })
+    });
+    const result = await response.json();
+    if (result.success) {
+      console.log('[Push] Push notification sent successfully.');
+    } else {
+      console.warn('[Push] Server failed to send push notification:', result.message);
     }
-
-    // Show the call UI immediately
-    confirmationContainer.style.display = 'none';
-    callContainer.style.display = 'block';
-    callStatusDiv.textContent = 'Connecting...';
-
-    try {
-        // 1. Get microphone access and connect to the signaling server
-        // This function will also update the status to 'Ringing...'
-        await getMedia();
-
-        // 2. Initiate the call on the server and wait for confirmation
-        const callId = `call_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        console.log('[Call] Initiating call with ID:', callId);
-        
-        // Wait for the server to acknowledge the call before sending the push
-        socket.emit('initiate-call', { calleeUserId: roomId, callId });
-
-        // The 'call-initiated' listener below will now handle sending the push notification.
-
-    } catch (err) {
-        console.error('Failed to initiate call:', err);
-        showModal(`Error: ${err.message}`, () => {
-            window.location.href = '/call-ended.html';
-        });
-    }
+  } catch (error) {
+    console.error('[Push] Error sending push notification request:', error);
+  }
 }
 
 // Event Listeners for confirmation
 if (btnConfirmYes) {
-  btnConfirmYes.addEventListener('click', initiateCall);
+  btnConfirmYes.addEventListener('click', () => {
+    const callerEmail = document.getElementById('caller-email').value.trim();
+    if (!callerEmail || !/^\S+@\S+\.\S+$/.test(callerEmail)) {
+      showModal('Please enter a valid email address to continue.');
+      return;
+    }
+
+    // Step 1: Update UI immediately for user feedback
+    confirmationContainer.style.display = 'none';
+    callContainer.style.display = 'flex';
+    callStatusDiv.textContent = 'Sending notification...';
+
+    // Step 2: Send the push notification immediately since the web client is the initiator.
+    try {
+      const calleeId = roomId.replace('4323', ''); // Correctly extract user ID from custom room ID
+      const callerName = 'Web Caller';
+      console.log(`[Push] Initiating call. Sending push to user ${calleeId} for room ${roomId}`);
+      
+      fetch(`${SERVER_URL}/send-call-push`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ toUserId: calleeId, roomId: roomId, callerName: callerName })
+      })
+      .then(res => res.json())
+      .then(result => {
+        if (result.success) {
+          console.log('[Push] Push notification sent successfully.');
+        } else {
+          console.warn('[Push] Server failed to send push notification:', result.message);
+        }
+      })
+      .catch(error => console.error('[Push] Error sending push notification request:', error));
+
+    } catch (error) {
+      console.error('[Push] Failed to construct push notification request:', error);
+    }
+
+    // Step 3: Now, request media and connect to the signaling server.
+ 
+    callStatusDiv.textContent = 'Requesting microphone access...';
+    getMedia();
+    
+    // Set a timeout to reject the call if not answered in 30 seconds
+    callRejectTimeout = setTimeout(() => {
+      if (!callHasTimedOut) {
+        callHasTimedOut = true;
+        socket.emit('hangup-call', roomId);
+        stopRinging();
+        showModal('The call was not answered.', () => {
+          window.location.href = '/call-ended.html';
+        });
+      }
+    }, 30000);
+  });
 }
 
 if (btnConfirmNo) {
